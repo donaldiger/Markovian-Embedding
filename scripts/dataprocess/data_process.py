@@ -9,8 +9,8 @@ def load_data(path):
 
 data, tcodes = load_data("data/raw/2025-09-fred-md.csv")
 
-print(data)
-print(tcodes)
+#print(data)
+#print(tcodes)
 
 def clean_data(X, max_missing = 24):
     """Drop series with too many NaNs, then drop any residual NaN rows/interp short gaps."""
@@ -21,7 +21,16 @@ def clean_data(X, max_missing = 24):
     X = X.drop(columns=dropped)
     return X.dropna()
 
-clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0])
+data_new = clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0])
+print(data_new)
+print(type(data_new))
+#data_new.median()
+
+df = pd.DataFrame([1,4,3])
+print(type(df) == type(data_new))
+df.median()
+#data_new.median()
+
 
 """
 def adjust_outliers(X, k= 10.0):
