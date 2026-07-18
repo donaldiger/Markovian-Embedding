@@ -4,11 +4,12 @@ import pandas as pd
 def load_data(path):
     df = pd.read_csv(path, sep=";")
     tcodes = df.iloc[0, 1:].astype(float).astype(int) #extract the codes of the data
-    data = df.iloc[1:].copy() #data itself
+    data = df.iloc[1:].copy()
+    data["sasdate"] = pd.to_datetime(data["sasdate"], format="%m/%d/%Y")
+    data = data.set_index("sasdate").apply(pd.to_numeric, errors="coerce") #data itself
     return data, tcodes
 
-data, tcodes = load_data("data/raw/2025-09-fred-md.csv")
-
+#data, tcodes = load_data("data/raw/2025-09-fred-md.csv")
 #print(data)
 #print(tcodes)
 
@@ -26,13 +27,14 @@ print(data_new)
 print(type(data_new))
 #data_new.median()
 
+"""
 df = pd.DataFrame([1,4,3])
 print(type(df) == type(data_new))
 df.median()
-#data_new.median()
-
-
+data_new.median()
 """
+
+
 def adjust_outliers(X, k= 10.0):
     #try to get rid of big outliers such as corona months and replace the values
     med, iqr = X.median(), X.quantile(0.75) - X.quantile(0.25)
@@ -43,10 +45,9 @@ def adjust_outliers(X, k= 10.0):
     return X.mask(mask).interpolate(limit_direction="both")
  
 def standardize_train_only(X):
-    train = X.copy
+    train = X.copy()
     mu, sd = train.mean(), train.std(ddof=0)
     return (X - mu) / sd, mu, sd
 
 standardize_train_only(adjust_outliers(clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0]))
 )
-"""
