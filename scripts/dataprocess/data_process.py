@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 def load_data(path):
     df = pd.read_csv(path, sep=";")
@@ -15,6 +13,20 @@ def load_data(path):
 #print(data)
 #print(tcodes)
 
+def _transform_series(x, code):
+    if code == 1:  return x
+    if code == 2:  return x.diff()
+    if code == 3:  return x.diff().diff()
+    if code == 4:  return np.log(x)
+    if code == 5:  return np.log(x).diff()
+    if code == 6:  return np.log(x).diff().diff()
+    if code == 7:  return x.pct_change().diff()
+    raise ValueError(f"unknown tcode {code}")
+
+def transform(df, tcodes):
+    out = pd.DataFrame({c: _transform_series(df[c], tcodes[c]) for c in df.columns})
+    return out.iloc[2:]   
+
 def clean_data(X, max_missing = 24):
     """Drop series with too many NaNs, then drop any residual NaN rows/interp short gaps."""
     n_miss = X.isna().sum()
@@ -24,9 +36,9 @@ def clean_data(X, max_missing = 24):
     X = X.drop(columns=dropped)
     return X.dropna()
 
-data_new = clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0])
-print(data_new)
-print(type(data_new))
+#data_new = clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0])
+#print(data_new)
+#print(type(data_new))
 #data_new.median()
 
 """
@@ -46,23 +58,21 @@ def adjust_outliers(X, k= 10.0):
           f"({mask.any(axis=1).sum()} months affected, incl. COVID if in sample)")
     return X.mask(mask).interpolate(limit_direction="both")
  
-def standardize_train_only(X):
+def standardize(X):
     train = X.copy()
     mu, sd = train.mean(), train.std(ddof=0)
     return (X - mu) / sd, mu, sd
 
-final_data = adjust_outliers(clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0]))
+#final_data = adjust_outliers(clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0]))
 
 def write_new_data(X, path = "/Users/mathisvernier/Markovian-Embedding/data/processed/processed_FRED_MD.csv"):
     X.to_csv(path)
 
-write_new_data(final_data)
+#write_new_data(final_data)
+data, tcodes = load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")
+X = transform(data, tcodes)
+X = clean_data(X)
+X = adjust_outliers(X)
+X_std, mu, sd = standardize(X)
 
-"""
-fig, ax = plt.subplots(1, 2, figsize=(9, 3.2))
-ax[0].bar(range(1, 21), evr[:20], color="steelblue"); ax[0].set_title("explained variance per PC")
-ax[1].plot(range(1, 21), np.cumsum(evr[:20]), "o-", ms=3, color="darkred")
-ax[1].axhline(.5, ls=":", c="gray"); ax[1].set_title("cumulative")
-for a in ax: a.set_xlabel("component"); a.tick_params(labelsize=8)
-fig.tight_layout(); fig.savefig("fig3_scree.png", dpi=130); plt.close(fig)
-"""
+write_new_data(X_std)
