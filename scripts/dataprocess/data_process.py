@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 def load_data(path):
     df = pd.read_csv(path, sep=";")
@@ -49,5 +51,18 @@ def standardize_train_only(X):
     mu, sd = train.mean(), train.std(ddof=0)
     return (X - mu) / sd, mu, sd
 
-standardize_train_only(adjust_outliers(clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0]))
-)
+final_data = adjust_outliers(clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0]))
+
+def write_new_data(X, path = "/Users/mathisvernier/Markovian-Embedding/data/processed/processed_FRED_MD.csv"):
+    X.to_csv(path)
+
+write_new_data(final_data)
+
+"""
+fig, ax = plt.subplots(1, 2, figsize=(9, 3.2))
+ax[0].bar(range(1, 21), evr[:20], color="steelblue"); ax[0].set_title("explained variance per PC")
+ax[1].plot(range(1, 21), np.cumsum(evr[:20]), "o-", ms=3, color="darkred")
+ax[1].axhline(.5, ls=":", c="gray"); ax[1].set_title("cumulative")
+for a in ax: a.set_xlabel("component"); a.tick_params(labelsize=8)
+fig.tight_layout(); fig.savefig("fig3_scree.png", dpi=130); plt.close(fig)
+"""
