@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+
+##data loading
 def load_data(path):
     df = pd.read_csv(path, sep=";")
     tcodes = df.iloc[0, 1:].astype(float).astype(int) #extract the codes of the data
@@ -76,3 +78,44 @@ X = adjust_outliers(X)
 X_std, mu, sd = standardize(X)
 
 write_new_data(X_std)
+
+
+
+##plots for qualitative data description
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+ 
+df, tc = load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")
+level = df["UNRATE"]
+diff  = level.diff()
+ 
+fig, axes = plt.subplots(2, 1, figsize=(10, 7), sharex=False)
+ 
+#Panel 1: full-history level, April 2020 marked
+ax = axes[0]
+ax.plot(level.index, level, color="steelblue", lw=1)
+ax.axvline(pd.Timestamp("2020-04-01"), color="darkred", ls="--", lw=1)
+ax.annotate("Apr 2020", xy=(pd.Timestamp("2020-04-01"), level.max()),
+            xytext=(pd.Timestamp("2010-01-01"), level.max()-1),
+            fontsize=9, color="darkred")
+ax.set_title("UNRATE — level, 1959–2025")
+ax.set_ylabel("unemployment rate (%)")
+ 
+#Panel 2: month-over-month change, zoomed 2018-2022
+ax = axes[1]
+win = diff.loc["2018-01-01":"2022-12-01"]
+colors = ["darkred" if d == win.max() else "steelblue" for d in win]
+ax.bar(win.index, win, width=20, color=colors)
+ax.axhline(0, color="black", lw=.6)
+ax.set_title("UNRATE — month-over-month change (tcode 2), 2018–2022")
+ax.set_ylabel("Δ percentage points")
+ 
+for a in axes:
+    a.tick_params(labelsize=8)
+ 
+fig.tight_layout()
+fig.savefig("fig_unrate_covid.png", dpi=140)
+print("saved. max jump =", diff.max(), "on", diff.idxmax().date())
