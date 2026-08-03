@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
+#Note for future!!!!
+#currently processed has the transform applied to it so its not stationary!
 
 ##data loading
 def load_data(path):
@@ -36,6 +41,7 @@ def clean_data(X, max_missing = 24):
     if dropped:
         print(f"dropping {len(dropped)} series with big gaps: {dropped}")
     X = X.drop(columns=dropped)
+    X = X.interpolate(limit=3, limit_area="inside")
     return X.dropna()
 
 #data_new = clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0])
@@ -83,10 +89,6 @@ write_new_data(X_std)
 
 ##plots for qualitative data description
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
  
 df, tc = load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")
 level = df["UNRATE"]
@@ -119,3 +121,5 @@ for a in axes:
 fig.tight_layout()
 fig.savefig("fig_unrate_covid.png", dpi=140)
 print("saved. max jump =", diff.max(), "on", diff.idxmax().date())
+
+
