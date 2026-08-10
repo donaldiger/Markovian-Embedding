@@ -4,8 +4,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-#Note for future!!!!
-#currently processed has the transform applied to it so its not stationary!
+TCODE_OVERRIDES = { #only for permit rn might have more later
+    "PERMIT": 5,
+}
+
+
 
 ##data loading
 def load_data(path):
@@ -14,6 +17,12 @@ def load_data(path):
     data = df.iloc[1:].copy()
     data["sasdate"] = pd.to_datetime(data["sasdate"], format="%m/%d/%Y")
     data = data.set_index("sasdate").apply(pd.to_numeric, errors="coerce") #data itself
+
+    for series, code in TCODE_OVERRIDES.items():
+        if series in tcodes.index:
+            print(f"overriding tcode for {series}: {tcodes[series]} -> {code}")
+            tcodes[series] = code
+
     return data, tcodes
 
 #data, tcodes = load_data("data/raw/2025-09-fred-md.csv")
@@ -73,18 +82,32 @@ def standardize(X):
 
 #final_data = adjust_outliers(clean_data(load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")[0]))
 
-def write_new_data(X, path = "/Users/mathisvernier/Markovian-Embedding/data/processed/processed_FRED_MD.csv"):
+def write_new_data(X, path):
     X.to_csv(path)
 
 #write_new_data(final_data)
+# we write the data 3 times because we need different versions (Untransformed(not stationary), not normalised, everything)
+
+# 1. Transformed + standardized (for PCA / Koopman)
 data, tcodes = load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")
 X = transform(data, tcodes)
 X = clean_data(X)
 X = adjust_outliers(X)
 X_std, mu, sd = standardize(X)
+write_new_data(X_std, "/Users/mathisvernier/Markovian-Embedding/data/processed/processed_FRED_MD.csv")
 
-write_new_data(X_std)
+# 2. Transformed, NOT standardized (for univariate/bivariate stats, real units)
+data, tcodes = load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")
+X = transform(data, tcodes)
+X = clean_data(X)
+X = adjust_outliers(X)
+write_new_data(X, "/Users/mathisvernier/Markovian-Embedding/data/processed/NS_data.csv")
 
+# 3. Untransformed raw levels, cleaned + outlier-adjusted (for cointegration)
+data, tcodes = load_data("/Users/mathisvernier/Markovian-Embedding/data/raw/2025-09-fred-md.csv")
+X = clean_data(data)          # no transform() call -- keep raw levels
+X = adjust_outliers(X)
+write_new_data(X, "/Users/mathisvernier/Markovian-Embedding/data/processed/UT_NS_data.csv")
 
 
 ##plots for qualitative data description
